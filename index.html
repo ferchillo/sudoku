@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!-- Meta viewport CORREGIDO - sin bloquear zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku 4x4 - Móvil Funcional</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #tablero {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 380px;
+            margin: 15px auto;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 20px;
+        }
+
+        /* Estilo de las celdas - OPTIMIZADO PARA MÓVIL */
+        .celda {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            font-size: 32px;
+            text-align: center;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            outline: none;
+            background: white;
+            color: #333;
+            font-weight: bold;
+            transition: all 0.2s;
+            /* Importante para móvil */
+            -webkit-appearance: none;
+            appearance: none;
+            -moz-appearance: textfield;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        /* Quitar flechas en inputs numéricos */
+        .celda::-webkit-outer-spin-button,
+        .celda::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .celda:focus {
+            transform: scale(1.02);
+            background: #e3f2fd;
+            border-color: #2196f3;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+        }
+
+        .fijo {
+            background: #ffd54f;
+            color: #000;
+            border-color: #ffb300;
+        }
+
+        .error {
+            background: #ef5350;
+            color: white;
+            border-color: #d32f2f;
+        }
+
+        .correcto {
+            background: #66bb6a;
+            color: white;
+            border-color: #388e3c;
+        }
+
+        #botones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+            width: 100%;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            min-width: 150px;
+            /* Mejora para móvil */
+            -webkit-appearance: none;
+            appearance: none;
+            touch-action: manipulation;
+        }
+
+        #verificar {
+            background: #4caf50;
+            color: white;
+        }
+
+        #reiniciar {
+            background: #2196f3;
+            color: white;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #mensaje {
+            font-size: 18px;
+            margin: 15px 0;
+            font-weight: bold;
+            padding: 10px 25px;
+            border-radius: 30px;
+            background: rgba(0,0,0,0.3);
+            /* Versión compatible con Safari */
+            background: rgba(0,0,0,0.3);
+            max-width: 380px;
+            width: 100%;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            h1 { font-size: 26px; }
+            #tablero { 
+                max-width: 320px; 
+                padding: 10px; 
+                gap: 5px;
+            }
+            .celda { 
+                font-size: 28px; 
+            }
+            button { 
+                width: 100%; 
+                max-width: 280px; 
+                padding: 18px 20px;
+                font-size: 20px;
+            }
+            #botones { 
+                flex-direction: column; 
+                align-items: center; 
+            }
+        }
+
+        @media (max-width: 350px) {
+            #tablero { max-width: 280px; }
+            .celda { font-size: 24px; }
+        }
+
+        .footer {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🧩 Sudoku 4x4</h1>
+    
+    <div id="tablero"></div>
+    
+    <div id="botones">
+        <button id="verificar">✔ Verificar</button>
+        <button id="reiniciar">🔄 Reiniciar</button>
+    </div>
+    
+    <div id="mensaje"></div>
+    
+    <div class="footer">
+        Toca las celdas vacías para escribir • Solo números 1-4
+    </div>
+
+    <script>
+        // =============================================
+        // LÓGICA DEL SUDOKU - VERSIÓN MÓVIL FUNCIONAL
+        // =============================================
+        
+        let solucion = [];
+        let puzzle = [];
+
+        // Función para validar si un número puede colocarse
+        function esValido(tablero, fila, columna, numero) {
+            // Verificar fila
+            for (let j = 0; j < 4; j++) {
+                if (tablero[fila][j] === numero) return false;
+            }
+            
+            // Verificar columna
+            for (let i = 0; i < 4; i++) {
+                if (tablero[i][columna] === numero) return false;
+            }
+            
+            // Verificar cuadrante 2x2
+            let filaInicio = Math.floor(fila / 2) * 2;
+            let columnaInicio = Math.floor(columna / 2) * 2;
+            
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    if (tablero[filaInicio + i][columnaInicio + j] === numero) return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Resolver Sudoku con backtracking
+        function resolver(tablero, fila = 0, columna = 0) {
+            if (fila === 4) return true;
+            
+            let siguienteFila = columna === 3 ? fila + 1 : fila;
+            let siguienteColumna = columna === 3 ? 0 : columna + 1;
+            
+            if (tablero[fila][columna] !== 0) {
+                return resolver(tablero, siguienteFila, siguienteColumna);
+            }
+            
+            // Probar números del 1 al 4 en orden aleatorio
+            let numeros = [1, 2, 3, 4];
+            for (let i = numeros.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [numeros[i], numeros[j]] = [numeros[j], numeros[i]];
+            }
+            
+            for (let num of numeros) {
+                if (esValido(tablero, fila, columna, num)) {
+                    tablero[fila][columna] = num;
+                    
+                    if (resolver(tablero, siguienteFila, siguienteColumna)) {
+                        return true;
+                    }
+                    
+                    tablero[fila][columna] = 0;
+                }
+            }
+            
+            return false;
+        }
+
+        // Generar una solución completa
+        function generarSolucion() {
+            let tablero = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0]
+            ];
+            
+            resolver(tablero);
+            return tablero;
+        }
+
+        // Crear puzzle a partir de la solución
+        function crearPuzzle(sol) {
+            // Copia profunda del array
+            let puzzle = JSON.parse(JSON.stringify(sol));
+            
+            // Dejar aproximadamente la mitad de celdas vacías
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    if (Math.random() < 0.5) {
+                        puzzle[i][j] = 0;
+                    }
+                }
+            }
+            
+            return puzzle;
+        }
+
+        // Dibujar el tablero
+        function dibujarTablero(tablero) {
+            const contenedor = document.getElementById('tablero');
+            contenedor.innerHTML = '';
+            
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const input = document.createElement('input');
+                    
+                    // Configuración CRÍTICA para móvil
+                    input.type = 'text';  // Cambiado de 'tel' a 'text' para mejor compatibilidad
+                    input.inputMode = 'numeric';  // Muestra teclado numérico
+                    input.pattern = '[1-4]*';
+                    
+                    input.className = 'celda';
+                    input.dataset.fila = i;
+                    input.dataset.columna = j;
+                    input.maxLength = 1;
+                    
+                    // Deshabilitar autocompletado y sugerencias
+                    input.autocomplete = 'off';
+                    input.autocorrect = 'off';
+                    input.autocapitalize = 'off';
+                    input.spellcheck = false;
+                    
+                    if (tablero[i][j] !== 0) {
+                        input.value = tablero[i][j];
+                        input.readOnly = true;
+                        input.classList.add('fijo');
+                    }
+                    
+                    // Eventos
+                    input.addEventListener('input', manejarInput);
+                    input.addEventListener('keydown', manejarKeydown);
+                    input.addEventListener('focus', function() {
+                        // Para móvil, asegurar que el input es visible
+                        setTimeout(() => {
+                            this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
+                    });
+                    
+                    contenedor.appendChild(input);
+                }
+            }
+        }
+
+        // Manejar entrada del usuario
+        function manejarInput(e) {
+            const input = e.target;
+            
+            // Solo permitir números 1-4
+            let valor = input.value.replace(/[^1-4]/g, '');
+            input.value = valor;
+            
+            // Validar errores después de cada cambio
+            setTimeout(validarErrores, 50);
+        }
+
+        // Manejar teclas
+        function manejarKeydown(e) {
+            const tecla = e.key;
+            
+            // Permitir teclas de control
+            const teclasPermitidas = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+            
+            if (tecla.length === 1 && !/^[1-4]$/.test(tecla) && !teclasPermitidas.includes(tecla)) {
+                e.preventDefault();
+            }
+            
+            // Navegación con Enter
+            if (tecla === 'Enter') {
+                e.preventDefault();
+                const inputs = Array.from(document.querySelectorAll('.celda:not([readonly])'));
+                const index = inputs.indexOf(e.target);
+                if (index !== -1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                } else if (index === inputs.length - 1) {
+                    inputs[0].focus();
+                }
+            }
+        }
+
+        // Validar errores en el tablero
+        function validarErrores() {
+            const celdas = document.querySelectorAll('.celda');
+            
+            // Quitar errores previos
+            celdas.forEach(c => c.classList.remove('error'));
+            
+            for (let i = 0; i < celdas.length; i++) {
+                const celda = celdas[i];
+                if (!celda.value) continue;
+                
+                const fila = parseInt(celda.dataset.fila);
+                const columna = parseInt(celda.dataset.columna);
+                const valor = celda.value;
+                
+                for (let j = i + 1; j < celdas.length; j++) {
+                    const otra = celdas[j];
+                    if (!otra.value) continue;
+                    
+                    const otraFila = parseInt(otra.dataset.fila);
+                    const otraColumna = parseInt(otra.dataset.columna);
+                    
+                    if (otra.value === valor) {
+                        // Misma fila
+                        if (fila === otraFila) {
+                            celda.classList.add('error');
+                            otra.classList.add('error');
+                        }
+                        // Misma columna
+                        if (columna === otraColumna) {
+                            celda.classList.add('error');
+                            otra.classList.add('error');
+                        }
+                        // Mismo cuadrante
+                        if (Math.floor(fila/2) === Math.floor(otraFila/2) && 
+                            Math.floor(columna/2) === Math.floor(otraColumna/2)) {
+                            celda.classList.add('error');
+                            otra.classList.add('error');
+                        }
+                    }
+                }
+            }
+        }
+
+        // Verificar si el Sudoku está correcto
+        function verificarCompleto() {
+            const celdas = document.querySelectorAll('.celda');
+            let completo = true;
+            
+            // Verificar que todas las celdas tengan valor
+            celdas.forEach(celda => {
+                if (!celda.value) completo = false;
+            });
+            
+            if (!completo) {
+                document.getElementById('mensaje').innerHTML = '❓ Completa todas las celdas primero';
+                return;
+            }
+            
+            // Verificar contra la solución
+            let correcto = true;
+            celdas.forEach(celda => {
+                const fila = parseInt(celda.dataset.fila);
+                const columna = parseInt(celda.dataset.columna);
+                const valor = parseInt(celda.value);
+                
+                if (valor !== solucion[fila][columna]) {
+                    correcto = false;
+                }
+            });
+            
+            const mensaje = document.getElementById('mensaje');
+            
+            if (correcto) {
+                mensaje.innerHTML = '🎉 ¡Felicidades! Sudoku completado correctamente';
+                celdas.forEach(c => c.classList.add('correcto'));
+            } else {
+                mensaje.innerHTML = '❌ Hay números incorrectos';
+            }
+        }
+
+        // Reiniciar juego
+        function reiniciarJuego() {
+            solucion = generarSolucion();
+            puzzle = crearPuzzle(solucion);
+            dibujarTablero(puzzle);
+            document.getElementById('mensaje').innerHTML = '';
+            
+            // Debug opcional
+            console.log('Nueva partida iniciada');
+        }
+
+        // =============================================
+        // INICIALIZACIÓN
+        // =============================================
+        
+        // Iniciar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Iniciar juego
+            reiniciarJuego();
+            
+            // Asignar eventos a botones
+            document.getElementById('verificar').addEventListener('click', verificarCompleto);
+            document.getElementById('reiniciar').addEventListener('click', reiniciarJuego);
+            
+            // Forzar reflow en iOS
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                document.body.style.display = 'none';
+                document.body.offsetHeight;
+                document.body.style.display = 'flex';
+            }
+        });
+
+        // Prevenir comportamientos no deseados en inputs
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.classList.contains('celda') && !e.target.readOnly) {
+                // Permitir foco normal
+                return true;
+            }
+        }, { passive: true });
+    </script>
+</body>
+</html>
