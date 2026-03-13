@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Sudoku 4x4 Mobile Friendly</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent; /* Quita el highlight azul en móviles */
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            width: 100%;
+        }
+
+        /* Contenedor principal */
+        #contenedor-principal {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            transition: all 0.3s ease;
+        }
+
+        /* Tablero de Sudoku */
+        #tablero {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        /* Estilo de las celdas - MEJORADO PARA MÓVIL */
+        input {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            font-size: 32px;
+            text-align: center;
+            border-radius: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            outline: none;
+            background: #ffffff;
+            color: #333;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            -webkit-appearance: none; /* Importante para iOS */
+            appearance: none;
+            -moz-appearance: textfield; /* Quita las flechas en Firefox */
+        }
+
+        /* Quita las flechas de input number en Chrome/Safari */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input:focus {
+            transform: scale(1.02);
+            background: #e0f7ff;
+            border-color: #118ab2;
+            box-shadow: 0 0 15px rgba(17, 138, 178, 0.5);
+        }
+
+        /* Celdas fijas (pista) */
+        .fijo {
+            background: #ffd166;
+            color: #000;
+            border-color: #f9c74f;
+        }
+
+        /* Celda con error */
+        .error {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ee6b6e;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Celda correcta */
+        .correcto {
+            background: #06d6a0;
+            color: white;
+            border-color: #05b086;
+        }
+
+        /* Contenedor de botones */
+        #contenedor-botones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        /* Estilo de botones - MEJORADO PARA MÓVIL */
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            min-width: 150px;
+            letter-spacing: 1px;
+            -webkit-appearance: none;
+            appearance: none;
+            touch-action: manipulation; /* Mejora la respuesta táctil */
+        }
+
+        #reiniciar {
+            background: #118ab2;
+            color: white;
+        }
+
+        #verificar {
+            background: #06d6a0;
+            color: white;
+        }
+
+        button:active {
+            transform: scale(0.98); /* Feedback táctil */
+        }
+
+        #mensaje {
+            font-size: 20px;
+            margin: 15px 0;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px 20px;
+            border-radius: 50px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            width: 100%;
+            max-width: 400px;
+            transition: all 0.3s ease;
+        }
+
+        /* ===== DISEÑO RESPONSIVE ===== */
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                justify-content: flex-start;
+                padding-top: 30px;
+            }
+
+            h1 {
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+
+            #tablero {
+                max-width: 350px;
+                gap: 8px;
+                margin: 10px 0;
+            }
+
+            input {
+                font-size: 28px;
+                border-radius: 12px;
+            }
+
+            #contenedor-botones {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                margin: 15px 0;
+            }
+
+            button {
+                width: 100%;
+                max-width: 300px;
+                padding: 18px 20px;
+                font-size: 20px;
+                margin: 0;
+            }
+
+            #mensaje {
+                font-size: 18px;
+                padding: 12px 15px;
+                margin: 10px 0;
+                max-width: 350px;
+            }
+
+            /* Reordenar para móvil */
+            #tablero { order: 1; }
+            #mensaje { order: 2; }
+            #contenedor-botones { order: 3; }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+                padding-top: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+
+            #tablero {
+                max-width: 300px;
+                gap: 6px;
+                margin: 8px 0;
+            }
+
+            input {
+                font-size: 24px;
+                border-radius: 10px;
+                border-width: 2px;
+            }
+
+            button {
+                max-width: 280px;
+                padding: 16px 18px;
+                font-size: 18px;
+            }
+
+            #mensaje {
+                font-size: 16px;
+                max-width: 300px;
+            }
+        }
+
+        /* Mejoras táctiles */
+        @media (hover: none) and (pointer: coarse) {
+            input {
+                font-size: 30px;
+                cursor: pointer;
+            }
+            
+            button {
+                padding: 20px 25px;
+                cursor: pointer;
+            }
+
+            button:hover {
+                transform: none;
+            }
+        }
+
+        /* Orientación horizontal */
+        @media (max-width: 768px) and (orientation: landscape) {
+            body {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #contenedor-principal {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                gap: 15px;
+            }
+
+            #tablero {
+                max-width: 250px;
+            }
+
+            #contenedor-botones {
+                flex-direction: column;
+                width: auto;
+            }
+
+            button {
+                max-width: 200px;
+                padding: 12px 15px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🧩 Sudoku 4x4</h1>
+
+    <div id="contenedor-principal">
+        <div id="tablero"></div>
+        <div id="mensaje"></div>
+        <div id="contenedor-botones">
+            <button id="verificar" onclick="verificarSudoku()">✔ Verificar</button>
+            <button id="reiniciar" onclick="nuevoJuego()">🔄 Reiniciar</button>
+        </div>
+    </div>
+
+    <div class="footer-info" style="margin-top:20px; font-size:12px; opacity:0.7;">
+        Toque las celdas vacías para escribir • Solo números 1-4
+    </div>
+
+    <script>
+        // =============================================
+        // LÓGICA DEL SUDOKU
+        // =============================================
+        let solucion = [];
+        let puzzle = [];
+
+        function esValido(tab, fila, col, num) {
+            for (let i = 0; i < 4; i++) {
+                if (tab[fila][i] == num) return false;
+                if (tab[i][col] == num) return false;
+            }
+
+            let startFila = Math.floor(fila / 2) * 2;
+            let startCol = Math.floor(col / 2) * 2;
+
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    if (tab[startFila + i][startCol + j] == num) return false;
+                }
+            }
+
+            return true;
+        }
+
+        function resolver(tab, fila = 0, col = 0) {
+            if (fila == 4) return true;
+
+            let nextFila = col == 3 ? fila + 1 : fila;
+            let nextCol = col == 3 ? 0 : col + 1;
+
+            let nums = [1, 2, 3, 4];
+            nums.sort(() => Math.random() - 0.5);
+
+            for (let n of nums) {
+                if (esValido(tab, fila, col, n)) {
+                    tab[fila][col] = n;
+                    if (resolver(tab, nextFila, nextCol)) return true;
+                    tab[fila][col] = 0;
+                }
+            }
+            return false;
+        }
+
+        function generarSolucion() {
+            let tab = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0]
+            ];
+            resolver(tab);
+            return tab;
+        }
+
+        function crearPuzzle(sol) {
+            let tab = sol.map(r => r.slice());
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    if (Math.random() < 0.5) {
+                        tab[i][j] = 0;
+                    }
+                }
+            }
+            return tab;
+        }
+
+        // =============================================
+        // FUNCIÓN PRINCIPAL DE DIBUJO - MEJORADA PARA MÓVIL
+        // =============================================
+        function dibujar(tab) {
+            let cont = document.getElementById("tablero");
+            cont.innerHTML = "";
+
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    let input = document.createElement("input");
+
+                    // Atributos importantes para móvil
+                    input.type = "tel"; // Usamos "tel" en lugar de "number" para mejor compatibilidad
+                    input.inputMode = "numeric"; // Muestra teclado numérico en móviles
+                    input.pattern = "[1-4]";
+                    
+                    input.dataset.fila = i;
+                    input.dataset.col = j;
+                    input.maxLength = 1;
+
+                    if (tab[i][j] != 0) {
+                        input.value = tab[i][j];
+                        input.readOnly = true;
+                        input.classList.add("fijo");
+                    }
+
+                    // Eventos mejorados para móvil
+                    input.addEventListener("input", function(e) {
+                        // Limpiar cualquier carácter no numérico
+                        this.value = this.value.replace(/[^1-4]/g, '');
+                        validar();
+                    });
+
+                    input.addEventListener("keydown", function(e) {
+                        // Prevenir entrada de caracteres no deseados
+                        const key = e.key;
+                        if (key.length === 1 && !/^[1-4]$/.test(key) && key !== 'Backspace' && key !== 'Delete' && key !== 'Tab') {
+                            e.preventDefault();
+                        }
+                    });
+
+                    // Para móviles: enfocar y seleccionar
+                    input.addEventListener("touchstart", function(e) {
+                        e.stopPropagation();
+                    });
+
+                    cont.appendChild(input);
+                }
+            }
+
+            // Enfocar el primer input vacío (útil para móviles)
+            setTimeout(() => {
+                const primerVacio = document.querySelector('#tablero input:not([readonly])');
+                if (primerVacio) primerVacio.focus();
+            }, 100);
+        }
+
+        // =============================================
+        // VALIDACIÓN
+        // =============================================
+        function validar() {
+            let celdas = document.querySelectorAll("#tablero input");
+            celdas.forEach(c => c.classList.remove("error"));
+
+            celdas.forEach(celda => {
+                let valor = celda.value;
+                if (valor == "") return;
+
+                let f = parseInt(celda.dataset.fila);
+                let c = parseInt(celda.dataset.col);
+
+                celdas.forEach(otra => {
+                    if (celda === otra) return;
+                    if (otra.value != valor) return;
+
+                    let f2 = parseInt(otra.dataset.fila);
+                    let c2 = parseInt(otra.dataset.col);
+
+                    if (f == f2 || c == c2 || 
+                        (Math.floor(f / 2) == Math.floor(f2 / 2) && Math.floor(c / 2) == Math.floor(c2 / 2))) {
+                        celda.classList.add("error");
+                        otra.classList.add("error");
+                    }
+                });
+            });
+        }
+
+        function verificarSudoku() {
+            let celdas = document.querySelectorAll("#tablero input");
+            let correcto = true;
+
+            celdas.forEach(celda => {
+                let f = celda.dataset.fila;
+                let c = celda.dataset.col;
+                if (parseInt(celda.value) != solucion[f][c]) {
+                    correcto = false;
+                }
+            });
+
+            let mensaje = document.getElementById("mensaje");
+            if (correcto) {
+                mensaje.innerHTML = "🎉 ¡Correcto! Sudoku completado";
+                mensaje.style.color = "#06d6a0";
+                celdas.forEach(c => c.classList.add("correcto"));
+            } else {
+                mensaje.innerHTML = "❌ Hay errores en el tablero";
+                mensaje.style.color = "#ff6b6b";
+            }
+        }
+
+        function nuevoJuego() {
+            solucion = generarSolucion();
+            puzzle = crearPuzzle(solucion);
+            dibujar(puzzle);
+            document.getElementById("mensaje").innerHTML = "";
+        }
+
+        // =============================================
+        // INICIALIZACIÓN Y MEJORAS PARA MÓVIL
+        // =============================================
+        
+        // Iniciar juego
+        nuevoJuego();
+
+        // Prevenir zoom en inputs (mejora UX móvil)
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'INPUT') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Detectar si es iOS para ajustes específicos
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+            document.body.classList.add('ios');
+            // En iOS, a veces el teclado tapa el input
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('focus', function() {
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+            });
+        }
+
+        // Tecla Enter para navegación
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                let celdas = document.querySelectorAll('#tablero input');
+                let currentIndex = -1;
+                
+                celdas.forEach((celda, index) => {
+                    if (celda === document.activeElement) currentIndex = index;
+                });
+                
+                if (currentIndex !== -1 && currentIndex < celdas.length - 1) {
+                    celdas[currentIndex + 1].focus();
+                }
+            }
+        });
+
+        // Debug: mostrar si es móvil
+        console.log('📱 Modo móvil:', /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    </script>
+</body>
+</html>
